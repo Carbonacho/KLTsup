@@ -1,0 +1,22 @@
+# MATLAB
+*.asv
+*.m~
+slprj/
+octave-workspace
+
+# Data & results (kept out of the shared repo)
+*.mat
+videos/
+**/tracked/
+
+# Generated demo output
+enhancement/enhanced_step*.png
+
+# Temporary flipped videos written by the pipeline
+VIDEO_Flipped*.mp4
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+desktop.ini
+*.tmp
