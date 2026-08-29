@@ -8,7 +8,7 @@ abstract: >-
   comparison.
 type: software
 license: MIT
-repository-code: "https://github.com/Carbonacho/fascicle-tracker"
+repository-code: "https://github.com/Carbonacho/KLTsup"
 authors:
   - family-names: Carbonaro
     given-names: Marco
