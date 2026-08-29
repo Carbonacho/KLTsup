@@ -1,18 +1,8 @@
 function Params = tracking_params(Params)
 
-% Josh R Baxter, PhD - University of Pennsylvania
-% joshrbaxter@gmail.com
-% version history
-% v1 - 2017-12-12 - parameters used for tracking
-%% input: Params - ultrasound parameters
-
-%% output: Params - updated params structure with tracking parameters
-
-%% parameters
-
 Params.padBorder = [0.01,0.01];
 for i=3:Params.n_struct
-    Params.padBorder(i)=0.05; % was 0.05
+    Params.padBorder(i)=0.05; 
 end
 Params.userInputHt = 1; % in mm
 Params.rectHt = round(Params.userInputHt / Params.px2mmX); %region of interest height
@@ -25,8 +15,7 @@ for i=3:Params.n_struct
     Params.landmarkString(i)={'Fascicle'};
     Params.markerColor(i)={'red'};
 end
-Params.blindUser = true;
-
+Params.blindUser = false;
 
 % tracking settings
 Params.displayTracking = true;
@@ -61,12 +50,11 @@ Params.ctrlPennMax          = 35;   % deg, max plausible pennation (check 5)
 Params.ctrlMinMaxDiffThresh = 0.1;  % normalised EM-vs-Hough difference near peaks (check 3)
 Params.ctrlDerivAgreeFrac   = 0.3;  % min fraction of agreeing derivatives in the window (check 2)
 
-
 % user inputs for optical flow tracking
-Params.userInputBiDirect_mm = 3; % in mm % previous 2mm --> do not increase (we raise it because the points do not move enough)
+Params.userInputBiDirect_mm = 3; % in mm 
 Params.userInputMaxBiDirectionalError = round(Params.userInputBiDirect_mm / Params.px2mmX);
-Params.userInputPyramidLevels = 5; % previous 4
-Params.userInputBlockSizemm = 3; % previous 3 % odd numbers
+Params.userInputPyramidLevels = 5; 
+Params.userInputBlockSizemm = 3; % odd numbers
 blocksizex = 2*round(((Params.userInputBlockSizemm/Params.px2mmX)+1)/2)-1;
 blocksizey = 2*round(((Params.userInputBlockSizemm/Params.px2mmY)+1)/2)-1;
 Params.userInputBlockSize = [blocksizex blocksizey];
@@ -76,7 +64,6 @@ for i=3:Params.n_struct
     Params.redefinePtsThresh(i)=0.5;
     Params.redefineWidthThresh(i)=0.00005;
 end
-
 
 % Manual tracking (Validation parameters)
 Params.validateFrameType = 'position'; % biodex channels - 'position' or 'cyclepercent' of clip for gait and other movements

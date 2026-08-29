@@ -1,7 +1,8 @@
-# Fascicle Tracker — User Guide
+# KLTsup — User Guide
 
-A step-by-step guide to `FascicleTrackerApp`, the GUI for ultrasound fascicle
-tracking (EM/FFT auto-tracking + manual validation + comparison).
+A step-by-step guide to **KLTsup** (supervised KLT-based fascicle tracking)
+through its GUI app `FascicleTrackerApp` — ultrasound fascicle tracking with
+automatic tracking, manual validation, and comparison.
 
 See [README.md](README.md) for requirements and folder layout.
 
@@ -70,8 +71,7 @@ change only if tracking is unstable.
 ### Supervised controls
 The Hough-signal drift-correction that makes the EM method "supervised".
 - **Use supervised controls** — master switch. Ticking it selects all
-  sub-controls; unticking gives **plain KLT** (no correction). While it's on you
-  can disable individual checks:
+  sub-controls; unticking gives **plain KLT** (no correction). Individual checks:
   - **Periodic re-seed** (+ Re-seed segments)
   - **Derivative agreement** (+ Deriv-agree fraction)
   - **Min-max diff (peaks)** (+ threshold)
@@ -144,7 +144,7 @@ Result → the **green "Informed manual"** curve.
 
 ## 8. Results tab
 
-- **Plots** — pennation (top), fascicle length (middle), Hough signal (bottom,
+- **Plots** — fascicle angle (top), fascicle length (middle), Hough signal (bottom,
   raw grey + filtered at the current Hough cutoff).
 - **Series toggles** — **EM (auto) / Informed manual / Pure manual** checkboxes
   show/hide each series (in the plots and the preview overlay).
@@ -153,7 +153,7 @@ Result → the **green "Informed manual"** curve.
 - **Frame cursor** — a vertical line marks the current preview frame; scrub the
   preview to move it.
 - **Bland-Altman** — opens EM-vs-manual Bland–Altman plots (bias ± 1.96 SD limits
-  of agreement) for pennation and length.
+  of agreement) for fascicle angle and length.
 - **Pop out** — opens the plots in a separate, live-synced window so you can view
   Preview and Results side by side.
 

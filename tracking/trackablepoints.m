@@ -1,6 +1,4 @@
 function [Data,Params] = trackablepoints(Data,videoFrame,Params,i1,pts0,redrawPts,videoFrame_bordo_nero,frame)
-%joshrbaxter@gmail.com
-% videoFrame = Data.frame(end).videoFrame;
 pts0_empty = false;
 if (nargin < 5) || (isempty(pts0))% get user input for points otherwise build points from current available pts
     if nargin > 5
@@ -13,42 +11,11 @@ if (nargin < 5) || (isempty(pts0))% get user input for points otherwise build po
     if Params.blindUser
         tname = 'Blinded Review';
     else
-        [~,tname,~] = fileparts(Data.trialName);
+        [~,tname,~] = fileparts(Data.originalVideoName);
         tname = strrep(tname,'_','\_');
     end
     if strcmp(Params.landmarkString{i1}, 'Fascicle') || Params.da_tracciare_apo==1
-    % if nargin>5 &&Params.cancellato==1
-    %     angle_h=Data.filtered_hough(frame); angle_h_pre=Data.filtered_hough(frame-20);
-    %     angle_penn_pre=Data.frame(frame-20).fascicle.pennation; rapporto=angle_h/angle_h_pre;
-    %     angle_penn=rapporto*angle_penn_pre;
-    %     m = tan((angle_penn*pi/180-5*pi/180));
-    %     p=Data.frame(frame-1).pts{3};
-    %     punto_x = mean(p(:,2));
-    %     punto_y = mean(p(:,1));
-    %     q=punto_x-m*punto_y;
-    %
-    %     % Draw the line on the image
-    %     figure,imshow(videoFrame);hold on;
-    %     x=1:1:600;
-    %     y=m*x+q;
-    %     plot(x,y)
-    %
-    %     pts0=[x;y]';Params.rectHt(3)=8;
-    %         initPts = true;
-    % redrawPts = false;
-    % end
-    % if length(callStack) > 1 && strcmp(callStack(2).name, 'trackpoints')
-    %     for m=3:length(Params.landmarkString)
-    % iTitle = sprintf('Select %s - Trial: %s',Params.landmarkString{m},tname);
-    % title(iTitle)
-    % iLine = imline();
-    % pts0 = iLine.getPosition(); % return a 2x2 matrix that contains the x,y of the 2 end point of the line
-    % title('select the height of the ROI');
-    % iLine2 = imline();
-    % ht = iLine2.getPosition(); % return a 2x2 matrix that contains the x,y of the 2 end point of the line
-    % Params.rectHt(m)=abs(round((ht(2,2)-ht(1,2))/2));
-    %     end
-    % else
+    
     if ~Data.traditionalDrazan && nargin < 8 && isfield(Params,'initFascicleLine') && ...
             numel(Params.initFascicleLine)>=i1 && ~isempty(Params.initFascicleLine{i1})
         % EM initialization only (nargin<8 => not a mid-tracking re-seed): reuse
@@ -67,15 +34,15 @@ if (nargin < 5) || (isempty(pts0))% get user input for points otherwise build po
         title(iTitle)
         iLine = imline();
         pts0 = iLine.getPosition(); % return a 2x2 matrix that contains the x,y of the 2 end point of the line
-        title('select the height of the ROI');
+        title('Select the height of the ROI');
         iLine2 = imline();
         ht = iLine2.getPosition(); % return a 2x2 matrix that contains the x,y of the 2 end point of the line
         Params.rectHt(i1)=abs(round((ht(2,2)-ht(1,2))/2));
         if Data.traditionalDrazan
-            Params.initFascicleLine{i1} = pts0;   % remember it for the EM init
+            Params.initFascicleLine{i1} = pts0;  
         end
     end
-    %end
+    
     initPts = true;
     redrawPts = false;
     else
@@ -121,7 +88,6 @@ else
 end
 % fit line to screen (aponeourses, i<3) or fascicle to aponeuroses (i > 2)
 p = polyfit(pts0(:,1),pts0(:,2),1);
-
 % pts1x will expand best fit line to cover width of image for aponerousis
 % or length of fascicle for fascicle
 if i1 < 3 && Params.retrack==1% aponeurosis line definition
@@ -129,17 +95,17 @@ if i1 < 3 && Params.retrack==1% aponeurosis line definition
     thesePts(:,2) = polyval(p,thesePts(:,1));
 elseif i1 < 3 && Params.retrack==0% aponeurosis line definition
     thesePts(:,1) = [1;Params.nx];
-    thesePts(:,2) = polyval(p,thesePts(:,1));%figure,plot(thesePts(1,1),thesePts(1,2),'x');hold on;plot(thesePts(2,1),thesePts(2,2),'x')
-  if nargin<5 && Data.traditionalDrazan   % apo figure + "confirm lines" only on the traditional pass (skip the EM re-confirm)
+    thesePts(:,2) = polyval(p,thesePts(:,1));
+  if nargin<5 && Data.traditionalDrazan  
     if i1==1
     Params.initFig = figure; imshow(videoFrame); hold on
-    title ('automated selected ROI for aponeuroses')
+    title ('Automated selected ROI for aponeuroses')
     end
   line(thesePts(:,1),thesePts(:,2),'LineWidth', 3);hold on
   meanX = mean(thesePts(:,1));
   meanY = mean(thesePts(:,2));
 
-    % Compute the limits of the second vertical line based on Params.rectHt1
+  % Compute the limits of the second vertical line based on Params.rectHt1
   halfRectHt1 = round(Params.rectHt1 / 2);
   startY = meanY - halfRectHt1;
   endY = meanY + halfRectHt1;
@@ -147,7 +113,7 @@ elseif i1 < 3 && Params.retrack==0% aponeurosis line definition
   % Draw the second vertical line at the midpoint of the previous line
   line([meanX meanX], [startY endY], 'LineWidth', 3);hold on
   if i1==2
-      button=questdlg('confirm lines','','Yes','No','Yes');
+      button=questdlg('Confirm lines','','Yes','No','Yes');
   if strcmp(button,'No')
      i1=1;
      Params.da_tracciare_apo=1;
@@ -185,9 +151,6 @@ else %fascicle
     thesePts = sort([pts1x,pts1y]);
 end
 
-% rotate image and line
-%x' = cos(theta)*x - sin(theta)*y
-%y' = sin(theta)*x + cos(theta)*y
 theta = atan2(p(1),1); % angle from horizontal
 iTform = affine2d([cos(theta) -sin(theta) 0;...
                     sin(theta) cos(theta) 0; 0 0 1]);
@@ -208,16 +171,11 @@ rectLength2 = rectLength1 - 2*moveInPx;
 rectROI = [X2(1)+moveInPx, Y2(1)-Params.rectHt(i1), rectLength2,2*Params.rectHt(i1)]; % top corner coordinate, width and height
 roi2Points = bbox2points(rectROI); % only works if the ROI is horizontal, not if the ROI is tilted
 
-%figure, imshow(im2), hold on ,fill(roi2Points(:,1),roi2Points(:,2),'b','FaceAlpha',0.3)
-%if i1 <= Params.n_struct % set image contrast - perform contrasting for deep aponeurosis, superficial aponeurosis and fascicle
-    %if initPts % analyse only inside the box, only on the first frame
 tmpInd = uint16(roi2Points);
 
 if Data.traditionalDrazan || (Data.traditionalDrazan==0 && i1<3)
     [im2,~] = imwarp(videoFrame,iTform,'nearest');   %nearest-neighbour interpolation is used, assigning the value of the closest pixel to the new point during the transform.
 
-% im2=im2*1.6; imshow(im2)
-%     im2(im2>1)=1;
     tmpIm2 = im2(tmpInd(1,2)+1:tmpInd(4,2),tmpInd(1,1):tmpInd(2,1));%select the small rectangle
     maxTmpIm2 = max(tmpIm2);
     stdTmpIm2 = std(tmpIm2);
@@ -225,38 +183,26 @@ if Data.traditionalDrazan || (Data.traditionalDrazan==0 && i1<3)
     %binarization threshold for the specific ROI
     if meanTmpIm2>0.5
         if i1<3
-          threshTmpIm2 = mean(maxTmpIm2)- 0.5 * mean(stdTmpIm2); %%%%%%%%
+          threshTmpIm2 = mean(maxTmpIm2)- 0.5 * mean(stdTmpIm2); 
         else
-        threshTmpIm2 = mean(maxTmpIm2)- 1 * mean(stdTmpIm2); %%%%%%%%
+        threshTmpIm2 = mean(maxTmpIm2)- 1 * mean(stdTmpIm2); 
         end
     else
         if i1<3
-          threshTmpIm2 = mean(maxTmpIm2)- 0.8 * mean(stdTmpIm2); %%%%%%%%
+          threshTmpIm2 = mean(maxTmpIm2)- 0.8 * mean(stdTmpIm2); 
         else
-        threshTmpIm2 = mean(maxTmpIm2)- 1.2 * mean(stdTmpIm2); %%%%%%%%%
+        threshTmpIm2 = mean(maxTmpIm2)- 1.2 * mean(stdTmpIm2); 
 
         end
     end
     Params.roi2Points{i1} = tmpInd; % the 4 corner coordinates of the bounding box are stored
-     % if length(Data.frame)==47
-     %     print('hello')
-     % end
-
-     Params.thresholdAponeurosis(i1) = threshTmpIm2;
-     im2 = (im2 < Params.thresholdAponeurosis(i1)) == 0; %threshold found on the roi applied to the whole image and only for the first frame
+    Params.thresholdAponeurosis(i1) = threshTmpIm2;
+    im2 = (im2 < Params.thresholdAponeurosis(i1)) == 0; %threshold found on the roi applied to the whole image and only for the first frame
     % ROI placement check
-    %figure, imshow(im2), hold on,fill(roi2Points(:,1),roi2Points(:,2),'b','FaceAlpha',0.3)
     tmpIm2 = (tmpIm2 < Params.thresholdAponeurosis(i1)) == 0;
     labels= bwlabel(tmpIm2);
     area= regionprops(labels,'Area');
     nLabels=length([area.Area].');
-    % p=prctile([area.Area].',95);
-    % for i=1:numel(area)
-    %     if area(i).Area<p
-    %         labels(labels==i)=0;
-    %     end
-    % end
-    %figure, imshow(labels)
     [sortedAreas,sortedAreaIdx]=sort(cell2mat(struct2cell(area)),'descend');
     sumPixels=sum(sortedAreas);
     if length(sortedAreas)>4
@@ -278,8 +224,7 @@ if Data.traditionalDrazan || (Data.traditionalDrazan==0 && i1<3)
             labels(labels==i)=0;
         end
     end
-    mask=labels; %figure, imshow(mask)
-    %%%%%%%%%%% CHECK IF THIS NEEDS TO BE MODIFIED
+    mask=labels; 
     mask(mask>1)=1; %build the binary mask of the ROI without small areas
     red_2=0;
     nTop=length(find(mask(1,:)==1));
@@ -299,15 +244,7 @@ if Data.traditionalDrazan || (Data.traditionalDrazan==0 && i1<3)
     if i1>2
         redrawROI=0; % to not revaluate the point of the ROI of the fascicle
     end
-    % if redrawROI
-    %     rectROI = [X2(1)+moveInPx, Y2(1)-Params.rectHt(i1)+shiftDist, rectLength2,2*Params.rectHt(i1)]; % top corner coordinate, width and height
-    % end
-    %roi2Points = bbox2points(rectROI);
-    %figure, imshow(mask)
-    %figure, imshow(im2), hold on,fill(roi2Points(:,1),roi2Points(:,2),'b','FaceAlpha',0.3)
-
-    %Data.frame(end).RoiDesplacement(i1,1)=shiftDist;                    %%%%%%%%%%%%%
-    Data.frame(end).thr(i1,1)=Params.thresholdAponeurosis(i1);         %%%%%%%%%%%%%
+    Data.frame(end).thr(i1,1)=Params.thresholdAponeurosis(i1);        
 
     if initPts || redrawROI  || redrawPts
         detect_im2s = detectSIFTFeatures(imcrop(im2,rectROI)); % function to find the feature points --> gives position
@@ -322,9 +259,6 @@ if Data.traditionalDrazan || (Data.traditionalDrazan==0 && i1<3)
         points_im2s=detect_im2s.Location;
         points_im2s=[points_im2s(:,1)+rectROI(1),points_im2s(:,2)+rectROI(2)];
         npoints_im2 = detect_im2.Count; %figure, imshow(im2), hold on, plot(detect_im2.Location(:,1),detect_im2.Location(:,2),'*b')
-        %  figure,imshow(im2);hold on
-        %  plot(detect_im2s.Location(:,1)+rectROI(1),detect_im2s.Location(:,2)+rectROI(2),'ro');hold on
-        % plot(points_im2(:,1),points_im2(:,2),'b+')
         % reduce number of tracking points to user defined
         if npoints_im2 > Params.maxTrackingPts(i1) %if too many, keep the most reliable
             %select points based on the point confidence metric.
@@ -332,10 +266,6 @@ if Data.traditionalDrazan || (Data.traditionalDrazan==0 && i1<3)
             points_im2 = points_im2(I(1:Params.maxTrackingPts(i1) ),:);
         end
         points_im2=[points_im2;points_im2s];
-        % figure,imshow(im2),hold on
-        % plot(points_im2(:,1),points_im2(:,2),'ro');
-        % transform points back to image coordinate system ( we found them
-        % in the rotated image)
         if theta < 0 %shift X back
             points_im2(:,1) = points_im2(:,1)...
                 - repmat(shiftX,length(points_im2),1);
@@ -360,8 +290,6 @@ if Data.traditionalDrazan || (Data.traditionalDrazan==0 && i1<3)
     end
 
 else  %inverse-FFT method, different thresholding. We arrive here if the method
-%is not Drazan's traditional one or if we are in the initialization phase
-
     if initPts %initialization phase
         [im2,~] = imwarp(videoFrame_bordo_nero,iTform,'nearest');   %nearest-neighbour interpolation is used, assigning the value of the closest pixel to the new point during the transform.
         fiber = fibermetric(im2,[6,8]);
@@ -372,7 +300,7 @@ else  %inverse-FFT method, different thresholding. We arrive here if the method
         points_im2 = detect_im2.Location;
         points_im2s=detect_im2s.Location;
         points_im2s=[points_im2s(:,1)+rectROI(1),points_im2s(:,2)+rectROI(2)];
-        npoints_im2 = detect_im2.Count; %figure, imshow(fiber), hold on, plot(points_im2(:,1),points_im2(:,2),'*b')
+        npoints_im2 = detect_im2.Count; 
         points_im2=[points_im2;points_im2s];
         % transform points back to image coordinate system
         if theta < 0 %shift X back
@@ -394,16 +322,7 @@ else  %inverse-FFT method, different thresholding. We arrive here if the method
 
     elseif redrawPts
 
-        % Try
-%         [im2,~] = imwarp(videoFrame_bordo_nero,iTform,'nearest');   %nearest-neighbour interpolation is used, assigning the value of the closest pixel to the new point during the transform.
-%         fiber = fibermetric(im2,[6,8]);
-%         fiber=edge(fiber,'canny');
-%         fiber= bwareaopen(fiber,80); %remove elements smaller than 80px
-%         detect_im2 = detectMinEigenFeatures(fiber,'ROI',rectROI);
         [im2,~] = imwarp(videoFrame,iTform,'nearest');   %nearest-neighbour interpolation is used, assigning the value of the closest pixel to the new point during the transform.
-        % fiber = fibermetric(im2,[6,8]);
-        % fiber=edge(fiber,'canny');
-        % fiber= bwareaopen(fiber,80); %remove elements smaller than 80px
 
         detect_im2 = detectMinEigenFeatures(im2,'ROI',rectROI);
         detect_im2s = detectSIFTFeatures(imcrop(im2,rectROI)); % function to find the feature points --> gives position
@@ -412,7 +331,7 @@ else  %inverse-FFT method, different thresholding. We arrive here if the method
         points_im2s=detect_im2s.Location;
         points_im2s=[points_im2s(:,1)+rectROI(1),points_im2s(:,2)+rectROI(2)];
 
-        npoints_im2 = detect_im2.Count; %figure, imshow(im2), hold on, plot(points_im2(:,1),points_im2(:,2),'*b')
+        npoints_im2 = detect_im2.Count; 
         points_im2=[points_im2;points_im2s];        % transform points back to image coordinate system figure, imshow(im2), hold on ,fill(rectROI(:,1),rectROI(:,2),'b','FaceAlpha',0.3)
         if theta < 0 %shift X back
             points_im2(:,1) = points_im2(:,1)...
@@ -430,8 +349,7 @@ else  %inverse-FFT method, different thresholding. We arrive here if the method
         Data.frame(end).pts{i1} = pts_trackable;
         Data.frame(end).endPts{i1} = pts_trackable_endpts;
         Data.frame(end).redefinePtsFlag(i1,1) = 1;
-
-% %     % Old version
+        % Old version
         theta = -atan2(p(1),1); % angle from horizontal
 
         iTform = affine2d([cos(theta) -sin(theta) 0;...
@@ -445,7 +363,6 @@ else  %inverse-FFT method, different thresholding. We arrive here if the method
         fiber(:,end-10:end)=0;
         checkMask = imbinarize(fiber,"global");
         checkMask= imdilate(checkMask, strel('disk',1));
-        %figure, imshow(checkMask), title('binarization of the fascicle ROI'), hold on , plot(pts0(:,1),pts0(:,2),'*g');
         stats = regionprops(checkMask, 'PixelList','Centroid');
         for i = 1:length(stats)
             pixelList = stats(i).PixelList;
@@ -454,7 +371,6 @@ else  %inverse-FFT method, different thresholding. We arrive here if the method
         end
         [~,y]=max(nCommonPts);
         passPoint=stats(y).Centroid;
-        %figure, imshow(checkMask), hold on , plot(passPoint(:,1),passPoint(:,2),'+r');
         meanAngle=Data.hough(frame);
         if ~isempty(meanAngle) || abs(meanAngle-Data.frame(end-1).angletexture)<5
             tiltAngle=deg2rad(meanAngle);
@@ -472,39 +388,23 @@ else  %inverse-FFT method, different thresholding. We arrive here if the method
                       thesePts(2,1)-3*deltax, thesePts(2,2)+deltay;...
                       thesePts(1,1)+deltax  , thesePts(1,2)+deltay;...
                       thesePts(1,1)+3*deltax, thesePts(1,2)-deltay];
-        %figure, imshow(im2), hold on ,fill(roi2Points(:,1),roi2Points(:,2),'b','FaceAlpha',0.3)
-        %figure, imshow(im2_no_rot), hold on ,fill(roi2Points(:,1),roi2Points(:,2),'b','FaceAlpha',0.3)
-            mask = roipoly(im2_no_rot, roi2Points(:,1),roi2Points(:,2));
+        mask = roipoly(im2_no_rot, roi2Points(:,1),roi2Points(:,2));
         catch
             pause
         end
-        %im2_no_rot=im2_no_rot.*mask; %mask that isolates the ROI without rotating!
         fiber = fibermetric(im2_no_rot,[4,6]);
-        fiber=edge(fiber,'canny');%figure,imshow(fiber);figure,imshow(mask)
-        fiber=fiber.*mask;%figure,imshow(fiber)
+        fiber=edge(fiber,'canny');
+        fiber=fiber.*mask;
         fiber=bwareaopen(fiber,80); %remove elements smaller than 80px
         fiber=bwareafilt(fiber,2);
-        %figure, imshow(fiber);
-
         [H,thetaList,rho] = hough(fiber,"Theta",-85:0.1:-40);
-        % figure,imshow(imadjust(rescale(H)),'XData',theta,'YData',rho,'InitialMagnification','fit'),colormap(gca,hot),xlabel('\theta'),ylabel('\rho'),axis on, axis normal;
         peaks = houghpeaks(H,20);
-        %hold on , x = theta(peaks(:,2)); y = rho(peaks(:,1)); plot(x,y,'s','color','green');
         lines = houghlines(fiber,thetaList,rho,peaks,'FillGap',5,'MinLength',30);
         thetaList=[lines.theta].'+90;
         meanAngle=mean(thetaList);
         angleDiff=abs(thetaList-meanAngle);
         lines (angleDiff>1)=[];
-        %figure, imshow(im2_no_rot), hold on
-%         for k = 1:length(lines)
-%            xy = [lines(k).point1; lines(k).point2];
-%            plot(xy(:,1),xy(:,2),'LineWidth',2,'Color','green');
-%
-%            % Plot beginnings and ends of lines
-%            plot(xy(1,1),xy(1,2),'x','LineWidth',2,'Color','yellow');
-%            plot(xy(2,1),xy(2,2),'x','LineWidth',2,'Color','red');
-%         end
-        checkMask=checkMask.*mask; %figure,imshow(checkMask),title('selected fascicle ROI');
+        checkMask=checkMask.*mask;
         toRemove=[];
         toSum=[];
         for i = 1 : size(pts0,1)
@@ -512,7 +412,6 @@ else  %inverse-FFT method, different thresholding. We arrive here if the method
             coords = [centre(1)-1,centre(2)-1; centre(1), centre(2)-1; centre(1)+1,centre(2)-1;...
                          centre(1)-1,centre(2)  ; centre(1), centre(2)  ; centre(1)+1,centre(2);...
                          centre(1)-1,centre(2)+1; centre(1), centre(2)+1; centre(1)+1,centre(2)+1];
-             %figure, imshow(checkMask), hold on , plot(centre(1),centre(2),'+r'), hold on , plot(coords(:,1), coords(:,2),'*g')
             for j= 1 : 6
                 if (coords(j,1)<=0)||(coords(j,2)<=0)
                     coords(j,:)=[];
@@ -541,9 +440,7 @@ else  %inverse-FFT method, different thresholding. We arrive here if the method
             points_im2(rowsToDrop,:)=[];
             i=i+1;
         end
-%         % figure, imshow(checkMask), hold on , plot(points_im2(:,1),points_im2(:,2),'*g')
-%         %  figure, imshow(checkMask), hold on , plot(pts0(:,1),pts0(:,2),'*r')
-%
+
 nPtsToAdd = floor((Params.maxTrackingPts(i1)-size(points_im2,1)));
 pts_trackable = points_im2;
 
@@ -612,4 +509,4 @@ end
     end
 end
 end
- % end gettrackablepts
+

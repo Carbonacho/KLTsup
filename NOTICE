@@ -1,0 +1,15 @@
+KLTsup — supervised muscle fascicle tracking
+Copyright (c) 2026 Marco Carbonaro and contributors
+
+This product includes and builds upon software developed by:
+
+  ultrasound_tracking — Josh R. Baxter, University of Pennsylvania
+  https://github.com/joshrbaxter/ultrasound_tracking
+
+Portions of the tracking pipeline in this project are derived from that work.
+We gratefully acknowledge the original author.
+
+This project also compares its output against:
+
+  UltraTimTrack — Tim van der Zee
+  https://github.com/timvanderzee/UltraTimTrack

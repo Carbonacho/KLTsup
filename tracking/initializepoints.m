@@ -1,12 +1,8 @@
 function [Data,Params,videoFrame0] = initializepoints(Data,Params,videoFrame,videoFrame_bordo_nero)
-% joshrbaxter@gmail.com
+
 iniFrame = Data.trackFrames(1); % first frame to track
 if nargin < 3
     %% read in video
-
-    % read in video file
-    %videoFileReader = vision.VideoFileReader(Data.trialName); % old
-
     videoFileReader1 = VideoReader(Data.trialName); %read the mp4 file
     Data.originalVideoName = Data.trialName;
     NFrames = videoFileReader1.NumFrames;
@@ -14,12 +10,7 @@ if nargin < 3
     path = fullfile(tempdir,'VIDEO_Flipped.mp4'); % path where to save the flipped video (writable temp dir)
     videoFileReader = VideoWriter(path,'MPEG-4');
     open(videoFileReader);
-    % In the following lines the video of interest will be flipped and the
-    % brigthness of it will be enhanced by a factor specified in line **
 
-%temp=read(videoFileReader1, 1);
-%temp=imcrop(temp,Params.imCropRect);
-%Im=zeros(size(temp,1),size(temp,2));
 %% set up the pre-processing progress bar
 h = waitbar(0, 'Pre-processing progress...');  % progress bar
 selectedInterval=1:length(Data.trackFrames);
@@ -31,7 +22,7 @@ totalSteps = length(selectedInterval);  % Total number of steps
 %% Hough for the aponeuroses at frame 1
 if frame==1
         SE=strel("rectangle",[3,3]);
-imm_apo=imerode(imbinarize(imm),SE);%figure,imshow((imm_apo))
+imm_apo=imerode(imbinarize(imm),SE);
 % Hough transform to detect the aponeurosis lines
 theta_range = [70:0.1:89];
 [selected_lines, centroids] = find_lines(imm_apo, theta_range, 400, 200, 70);
@@ -42,13 +33,13 @@ rowsWithZeros = any(centroids == 0, 2);
 centroids = centroids(~rowsWithZeros, :);
 
 for k = 1:length(selected_lines)
-     % Compute the distance between the two points (line length)
+    % Compute the distance between the two points (line length)
     point1 = selected_lines(k).point1;
     point2 = selected_lines(k).point2;
     selected_lines(k).lunghezza = sqrt((point1(1) - point2(1))^2 + (point1(2) - point2(2))^2);
 end
-centroids = centroids(~rowsWithZeros, :); %lines containing zeros are deleted
-maxDiffs = max(abs(diff(centroids))); %difference calculation
+centroids = centroids(~rowsWithZeros, :); 
+maxDiffs = max(abs(diff(centroids))); 
 
 if maxDiffs(2)>200 %threshold to understand whether both the aponeuroses have been detected
     lines1=selected_lines(find(centroids(:,2)>250));
@@ -57,16 +48,16 @@ if maxDiffs(2)>200 %threshold to understand whether both the aponeuroses have be
     Params.linee_apon{2}=lines2;
     Params.centroidi_apon{1}=centroids(find(centroids(:,2)>250));
     Params.centroidi_apon{2}=centroids(find(centroids(:,2)<250));
-    Params.da_tracciare_apo=0; %flag
+    Params.da_tracciare_apo=0; 
 elseif mean(centroids(:,2))>200
     Params.linee_apon{1}=selected_lines;
     Params.centroidi_apon{1}=centroids;
-    Params.da_tracciare_apo1=0; %flag
+    Params.da_tracciare_apo1=0; 
     Params.da_tracciare_apo2=1;
 elseif mean(centroids(:,2))<=200
     Params.linee_apon{2}=selected_lines;
     Params.centroidi_apon{2}=centroids;
-    Params.da_tracciare_apo1=1; %flag
+    Params.da_tracciare_apo1=1; 
     Params.da_tracciare_apo2=0;
 end
 for y=1:2
@@ -104,7 +95,6 @@ p75Lines{j} = prctile(ang{j}, 75);
 end
 Params.linee_apon1 = filteredLines{1}; % update Params
 Params.linee_apon2 = filteredLines{2};
-
 
 mean1=mean(iLine1{1});mean2=mean(iLine2{1}); %aponeuroses thickness estimation
 d=abs(diff(iLine1{1}));d2=abs(diff(iLine2{1}));
@@ -170,7 +160,6 @@ end
     for i = 1:iniFrame % step through to starting frame
         videoFrame = step(videoFileReader);
     end
-
     videoFrame = rgb2gray(videoFrame);
 
 end
@@ -227,25 +216,18 @@ while getuserinput
     fNy=Params.framerate/2;
     if isfield(Params,'houghCutoff'), fcH=Params.houghCutoff; else, fcH=1; end
     [b,a]=butter(6,fcH/fNy,"low");
-    signal=Data.hough;%figure,plot(signal)
+    signal=Data.hough;
     signal=filtfilt(b,a,Data.hough);
-    %hold on
-    %plot(signal,LineWidth=3)
     Data.filtered_hough=signal;
-    % figure,plot(signal);hold on;
     [val,pos]=findpeaks(signal,MinPeakHeight=18);
     if length(pos)<=2
        [val,pos]=findpeaks(signal);
     end
-    % title('Hough signal');
-    %legend('Original','filtered 1 Hz');
-    % xlabel('samples');ylabel('angle (deg)')
     Params.punti_di_controllo=pos;
-
 
     % we have H, thus the angle and thus m
     % we have plotinsertions --> compute thickness
-    %compute length from fascicle-deep apo intersection and m
+    % compute length from fascicle-deep apo intersection and m
     % find intersection with superficial apo and compute length
     min_H=min(Data.filtered_hough);
     max_H=max(Data.filtered_hough);
@@ -288,7 +270,6 @@ while getuserinput
          release(videoFileReader);
         end
         close gcf
-%         returnData = Data.frame(iniFrame); % output processed data
     return;
     end
     % otherwise repeat loop
@@ -301,7 +282,6 @@ function [selected_lines, centroids] = find_lines(imm_apo, theta_range, y_max, m
     [H, theta, rho] = hough(double(imm_apo), 'Theta', theta_range);
     peaks = houghpeaks(H, num_peaks);
     lines = houghlines(imm_apo, theta, rho, peaks);
-
     selected_lines = [];
     centroids = [];
     for k = 1:length(lines)

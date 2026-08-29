@@ -1,8 +1,4 @@
 function [Data,Params]=hough_fas(Data,Params,videoFrame_bw,n)
-%figure, imshow(videoFrame_bw)
-% take the ROI limits from the aponeurosis estimate computed on the first
-% frame.
-% figure, imshow(videoFrame_bw)
 for i1=1:2 %aponeuroses
     iPts = Params.(['apon_media' num2str(i1)]);
     iX = iPts(:,1);
@@ -21,10 +17,7 @@ iTform = affine2d([cos(theta_1) -sin(theta_1) 0;...
                     sin(theta_1) cos(theta_1) 0; 0 0 1]);
 [im2,~] = imwarp(videoFrame_bw,iTform,'nearest');
 
-% figure,subplot(1,2,1),imshow(videoFrame_bw);hold on, subplot(1,2,2),
-% imshow(im2)
 xy = [Params.linee_apon1.point1; Params.linee_apon1.point2];
-    % plot(xy(:,1), xy(:,2), 'LineWidth', 2, 'Color', 'red');
 x = [linePtsPlot(1).x; linePtsPlot(2).x];
 y = [linePtsPlot(1).y; linePtsPlot(2).y];
 [X2,Y2] = transformPointsForward(iTform,x,y); % rotate line
@@ -41,10 +34,10 @@ x_1 =floor(X2(3));
 y_1 = floor(Y2(3)+17); %move away from the superficial and deep aponeuroses with px offsets
 h =floor(Y2(2)-Y2(3)-33);
 w =floor(X2(2)-X2(3));
- im3=im2single(im2); %figure,imshow(im3)
+ im3=im2single(im2); 
 
 % % Crop the image
-im = imcrop(im3, [x_1,y_1, 600, 250]);%figure, imshow(im)
+im = imcrop(im3, [x_1,y_1, 600, 250]);
 
 % % Old version
 y_1_o = floor(linePtsPlot(2).y(1)+17); %move away from the superficial and deep aponeuroses with px offsets
@@ -55,7 +48,6 @@ im2g=imgaussfilt(im,12);
 mask = imbinarize(im1g-im2g,'global');
 mask=bwareaopen(mask,50);
 im(mask == 0) = 0;
-%figure,imshow(im)% subtract background
 % Compute power spectrum
 a = fft2(im);
 a = fftshift(a);
@@ -68,12 +60,10 @@ centre = [ind_r,ind_c];
 % Threshold for picking points
 thr = max(prctile(power,93));
 [r,c,specVals] = find(power > thr);
-%hold on, plot(c,r,'+r')
 
 % Build mask
 mask = zeros(size(power,1),size(power,2));
-%mask(power>thr) = power(power>thr);
-mask(power>thr)=1;%imshow(mask)
+mask(power>thr)=1;
 
 % Compute Euclidean distances
 
@@ -93,49 +83,31 @@ for i=1:length(specVals)
     end
 end
 
-%figure, imshow(mask.*imag(a)), axis off
-
 % Inverse transform
 a_fin = ifftshift(mask.*(a));
 imm_fin = ifft2(a_fin);
-%figure, imshow(imm_fin)
 
-% Filtering
-% lapl=fspecial('laplacian',0.5);
-% %lapl = fspecial("log",[11,11],7);
-% im2 = imfilter(imm_fin,lapl);
-% I = abs(im2)+imm_fin;
 I=(imm_fin); %imshow(imadjust(I))
-%I = rescale(I,-0.5,0.8); % (was -1.4,0.6)
 I = rescale(real(I),-1.4,1.0); %% to be tuned
-%figure, imshow(I), title('frequency-domain processing of the fascicle ROI')
 
 %% Fiber metric , Frangi filter
 
-im2=imbinarize(I,"global");%figure,imshow(im2)
-im2=edge(im2);%figure,imshow(im2)
+im2=imbinarize(I,"global");
+im2=edge(im2);
 [H,theta,rho] = hough(im2,'RhoResolution',1,'Theta',-75:0.1:-30);
-%figure,imshow(imadjust(rescale(H)),'XData',theta,'YData',rho,'InitialMagnification','fit'),colormap(gca,hot),xlabel('\theta'),ylabel('\rho'),axis on, axis normal;
 peaks = houghpeaks(H,15);
-%hold on , x = theta(peaks(:,2)); y = rho(peaks(:,1)),plot(x,y,'s','color','green','LineWidth',2);
- lines = houghlines(im2,theta,rho,peaks,'FillGap',5,'MinLength',15);
- %figure, imshow(im2), hold on
+lines = houghlines(im2,theta,rho,peaks,'FillGap',5,'MinLength',15);
 for k = 1:length(lines)
    xy = [lines(k).point1; lines(k).point2];
-   % plot(xy(:,1),xy(:,2),'LineWidth',2,'Color','green');
-   %Plot beginnings and ends of lines
-   %plot(xy(1,1),xy(1,2),'x','LineWidth',2,'Color','yellow');
-   %plot(xy(2,1),xy(2,2),'x','LineWidth',2,'Color','red');
 end
 
-theta1 = 90 + [lines.theta].';%figure,plot(theta1);hold on
+theta1 = 90 + [lines.theta].';
 
 try
 window_size = 5; % Median filter window size
 meanAngle = mean(theta1);
     alpha=abs(atan2d(ip{1}(1),1));
-    penn = meanAngle;     %+alpha;
-    % fascicle_length = h/sind(penn); %consider computing here
+    penn = meanAngle;     
     if penn>0
     Data.hough(n) = penn;
     else

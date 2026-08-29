@@ -1,4 +1,3 @@
-
 function DataValidate = trackpoints_validate(Data,Params)
 %% Manual validation of the fascicle after automatic tracking.
 %  The aponeuroses are taken from the automatic track; the user only draws /

@@ -1,16 +1,5 @@
 function [Fascicle,Data,DataEM,ParamsEM,init,init_EM] = trackfascicle(Data,Params,first,name,previousData,previousDataEM)
 
-% Josh R Baxter, PhD - University of Pennsylvania
-% joshrbaxter@gmail.com
-% version history
-% v1 - 2017-06-06 - main layout
-
-% DEF !!!!
-
-%% initialize tracking algorithm
-% Data.trackFrames = frms; % passed thru function
-% Data.trialName = ''; % full AVI path
-
 % track points for trial
 HoldData = Data; %hold Data struct in case reprocess is clicked
 % Data is a structure that contains mocapTime, imagetime, track frame and
@@ -27,9 +16,6 @@ while 1
 
         %initialization of feature points
         [Data,Params,videoFrame_bw] = initializepoints(Data,Params);
-        % inside initializepoint: automatic aponeuroses estimation (Hough
-        % transform for frame==1) and hough fascicle calculation ( the
-        % function "hough_fas" is recalled)
 
         %processing with the FFT
         [DataEM,enhancedFrame,enhancedFrameBlack, ~, ~,Params]= Tissue_angle(Data,videoFrame_bw,Params,Data.trackFrames(1));
@@ -72,14 +58,10 @@ while 1
     [b,a]=butter(6,fcH/fNy,"low");
     Data.filtered_hough=filtfilt(b,a,Data.hough); %low-pass filtering to enhance peaks
 
-    % figure,plot(segnale);hold on;
     [val,pos]=findpeaks(Data.filtered_hough,MinPeakHeight=18);
     if length(pos)<=2
        [val,pos]=findpeaks(Data.filtered_hough);
     end
-    % title('Hough signal');
-    %legend('Original','filtered');
-    % xlabel('samples');ylabel('angle (deg)')
     Params.punti_di_controllo=pos;       %Hough transform peaks
 
     % we have H, thus the angle and thus m
@@ -89,25 +71,6 @@ while 1
     min_H=min(Data.filtered_hough);
     max_H=max(Data.filtered_hough);
 
-    % valori=Data.frame.fascicle.plotInsertions;
-    % apo1x=valori(1).x; apo1y=valori(1).y;
-    % m_apo1=(diff(apo1y)./diff(apo1x));
-    % coeff_90 = -1/m_apo1;
-    % punto_centrale_apo1x=(apo1x(1)+apo1x(2))/2; punto_centrale_apo1y=(apo1y(1)+apo1y(2))/2;
-    %
-    % int_90 = punto_centrale_apo1y - coeff_90 *punto_centrale_apo1x;
-    % retta_superficiale = polyfit(valori(2).x,valori(2).y,1);
-    %
-    % x_int =(int_90-retta_superficiale(2))./(retta_superficiale(1)-coeff_90);
-    % y_int = coeff_90*x_int + int_90;
-    % muscle_thickness=sqrt((x_int-punto_centrale_apo1x)^2+(y_int-punto_centrale_apo1y)^2)*Params.px2mmY;
-    %
-    % % insert_deep=Data.frame.fascicle.insertionDeep_px;
-    %
-    % m_min=tand(min_H);m_max=tand(max_H);
-    % FL_max=muscle_thickness/sind(min_H);
-    % FL_min=muscle_thickness/sind(max_H);
-    % Params.soglia_lunghezza=abs(FL_max-FL_min);
             %Close the output video file
             close(videoFileReader);
             videoFileReader = vision.VideoFileReader(path);
@@ -182,9 +145,6 @@ for i1 = 1:nr
         j=jF-thisData.trackFrames(1)+1;
         Fascicle.(iField).length(j,:) = thisData.frame(jF).fascicle.length;
         Fascicle.(iField).pennation(j,:) = thisData.frame(jF).fascicle.pennation;
-        % if i1==2 %we compute it only in the EM case for all frames and not in the traditional one
-        % Fascicle.(iField).tissueAngle(j,:)=thisData.frame(jF).angletexture;
-        % end
         Fascicle.(iField).insertDeep(:,:,j) = thisData.frame(jF).fascicle.insertionDeep_mm;
         Fascicle.(iField).insertSup(:,:,j) = thisData.frame(jF).fascicle.insertionSuperficial_mm;
         Fascicle.(iField).plotInsertions{j} = thisData.frame(jF).fascicle.plotInsertions;
@@ -205,7 +165,6 @@ for i1 = 1:nr
         [~,originalVideoName,~] = fileparts(thisData.originalVideoName);
         try
             fprintf('\tSaving tracked video %s...\n',name)
-            % suppress warnings
             warning('off','all')
             if ~exist(Params.trackedSaveDir,'dir')
                 mkdir(Params.trackedSaveDir)
@@ -215,7 +174,6 @@ for i1 = 1:nr
                 videoFileReader = vision.VideoFileReader(thisData.trialName);
                 videoSavePath = fullfile(Params.trackedSaveDir,[name,'_',iField,'.mp4']);
                 TrackingVideo = VideoWriter(videoSavePath,'MPEG-4');
-                %TrackingVideo.FrameRate =Params.framerate /Params.downsampling_framerate;
                 TrackingVideo.Quality = 90;    % Default 75
                 open(TrackingVideo);
 
@@ -226,7 +184,6 @@ for i1 = 1:nr
                 for jF = thisData.trackFrames(1) :length(thisData.frame)
 
                     videoFrame = step(videoFileReader);
-                    %videoFrame = imcrop(videoFrame,Params.imCropRect);
                     videoFrame = plottrial(thisData,videoFrame,Params,jF);
                     writeVideo(TrackingVideo,videoFrame);
 
@@ -237,15 +194,12 @@ for i1 = 1:nr
             if i1==2
                 videoSavePath = fullfile(Params.trackedSaveDir,[name,'_',iField,'.mp4']);
                 TrackingVideo = VideoWriter(videoSavePath,'MPEG-4');
-                %TrackingVideo.FrameRate = Params.framerate /Params.downsampling_framerate;
                 TrackingVideo.Quality = 90;    % Default 75
                 open(TrackingVideo);
                 for jF = thisData.trackFrames(1) :thisData.trackFrames(end)
-
                     videoFrame =repmat(thisData.frame(jF).videoFrame,[1,1,3]);
                     videoFrame = plottrial(thisData,videoFrame,ParamsEM,jF);
                     writeVideo(TrackingVideo,videoFrame);
-
                 end
                 close(TrackingVideo);
                 warning('on','all')

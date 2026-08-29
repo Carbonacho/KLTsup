@@ -1,5 +1,5 @@
 function [Data,DataEM,Params,ParamsEM] = trackpoints(Data,DataEM,Params,ParamsEM)
-%% joshrbaxter@gmail.com
+
 Data.manual = 0;
 DataEM.manual = 0;
 frameIni = Data.trackFrames(1);
@@ -19,7 +19,6 @@ if ~isfield(ParamsEM,'ctrlEnDeriv'),          ParamsEM.ctrlEnDeriv   = true;    
 if ~isfield(ParamsEM,'ctrlEnMinMax'),         ParamsEM.ctrlEnMinMax  = true;         end
 if ~isfield(ParamsEM,'ctrlEnLenJump'),        ParamsEM.ctrlEnLenJump = true;         end
 if ~isfield(ParamsEM,'ctrlEnPenn'),           ParamsEM.ctrlEnPenn    = true;         end
-%% read in video
 
 % read in video file
 videoFileReader = vision.VideoFileReader(Data.trialName);
@@ -51,24 +50,14 @@ initialize(pointTrackerEM, pointsEM,videoFrame_bwEM)
 oldPoints = points;
 oldPointsEM=pointsEM;
 
-
-% Display the annotated video frame using the video player object
-% fig = figure('Name','Video Player');
-% set(fig,'Units','normalized','Position',[0.1,0.1,0.8,0.8]);
-
 if Params.displayTracking
-    %videoPlayer  = vision.VideoPlayer('Position',Params.figPos);
-    %step(videoPlayer, videoFrame);
     videoPlayerEM  = vision.VideoPlayer('Position',ParamsEM.figPos);
     videoFrameEM=repmat(videoFrame_bwEM,[1,1,3]);
     step(videoPlayerEM, videoFrameEM);
 end
 
-%indexing for redefining points
-
 redefineInd = frameIni*ones(Params.n_struct,1);
 
-%initialize while loop count
 n = frameIni+1;
 ind1 = frameIni+1;
 wrong = 0;
@@ -85,21 +74,13 @@ videoFrame = step(videoFileReader);
 videoFrame_bw = rgb2gray(videoFrame);
 
 % Track the points. Note that some points may be lost.
-[points, isFound] = step(pointTracker, videoFrame_bw); %%%%%% IMPORTANT!
+[points, isFound] = step(pointTracker, videoFrame_bw); 
 %the step function applies the optical flow. Each time it is called it
 %advances to the next frame!
 % this block checks whether all points were found
 visiblePoints = points(isFound, :);
 oldInliers = oldPoints(isFound, :);
 
-%     if Params.rejectOutliers
-%         % Estimate the geometric transformation between the old points
-%         % and the new points and eliminate outliers
-% %         [xform, oldInliers, visiblePoints] = estimateGeometricTransform(...
-% %             oldInliers, visiblePoints, 'similarity', 'MaxDistance', 4);
-%         [xform, oldInliers, visiblePoints] = estimateGeometricTransform(...
-%             oldInliers, visiblePoints, 'similarity', 'MaxDistance', 3);
-%     end
 %% VARIOUS CHECKS
 % below are the checks to make sure too many points are not lost
 % PointTracker sees the error, and if it is too high, it removes the points
@@ -145,31 +126,13 @@ for i = 1:Params.n_struct
         c=or(cluster_flag(1), cluster_flag(2));
         iWidthThreshHit=or(iWidthThreshHit,c);
     else % fascicle
-        % count=0;
-        % ind_punti_fas=(group==i);
-        % punti_fas=points(ind_punti_fas==1,:);
-        % for m =1:size(punti_fas,1)
-        %     for j=1:size(punti_fas,1)
-        %     d=(mean(abs(punti_fas(m,:)-punti_fas(j,:))));
-        %     if d~=0 & d<1
-        %         count=count+1;
-        %     end
-        %     end
-        % end
-        % if count >50
-        % iWidthThreshHit = 1;
-        % else
-        %     iWidthThreshHit = 0;
-        % end
+        
         iWidthThreshHit=(cluster_flag(3));
     end
     redrawPts = or(iPtsThreshHit,iWidthThreshHit);
     %recompute the points if they are not good
     Data = trackablepoints(Data,videoFrame_bw,Params,i,Data.frame(n).pts{i},redrawPts);
-
-
     n_npts(i) = size(Data.frame(n).pts{i},1);
-
     nGroup = [nGroup;i*ones(n_npts(i),1)];
     nVisiblePoints = [nVisiblePoints;Data.frame(n).pts{i}];
 end
@@ -200,8 +163,6 @@ DataEM.frame(n).pts{1}=Data.frame(n).pts{1};
 DataEM.frame(n).pts{2}=Data.frame(n).pts{2};
 nVisiblePointsEM=nVisiblePoints(find(nGroup<3),:);
 nGroupEM=nGroup(find(nGroup<3),:);
-% [immagine_ROI,cont]=selezione_aponeurosi(videoFrame_bw);
-% videoFrame_bw=(immagine_ROI+cont);
 [DataEM, videoFrame_bwEM,videoFrame_bwEM_black,y,h] = Tissue_angle(DataEM,videoFrame_bw,ParamsEM,n);
 DataEM.frame(n).videoFrame = videoFrame_bwEM; %save the preprocessed frames to store a new video
 
@@ -240,7 +201,7 @@ for i=3:ParamsEM.n_struct
         redrawPts=1;
         ind1=n;
     end
-    %redrawPts=0; %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %redrawPts=0;
     if wrong == 1
         if length(ParamsEM.landmarkString)>3
         DataEM.frame(n).pts(i:length(ParamsEM.landmarkString)) = {[]}; % empty the fascicle/aponeurosis ROI if wrong = 1
@@ -273,10 +234,8 @@ end
 %% update pointTrackerEM
 DataEM.frame(n).oPts = n_npts;
 groupEM = nGroupEM;
-% store frame n points and group data
 DataEM.frame(n).points = nVisiblePointsEM;
 DataEM.frame(n).group = groupEM;
-% calculate fascicle angle and length
 DataEM.frame(n).fascicle = calculatefascicle(DataEM.frame(n),ParamsEM);
 if ParamsEM.n_struct==3
 angleList(n)=DataEM.frame(n).fascicle.pennation;
@@ -286,15 +245,12 @@ end
 if ParamsEM.useControls   % ===== supervised drift-correction controls (toggle) =====
 tolerance=0.15*(mean(diff(Params.punti_di_controllo)));
         peakSpacing=mean(diff(Params.punti_di_controllo));
-
          prevWindow=round(0.3*peakSpacing);
-
  if n >0.4*Params.framerate+3  && n >= Params.punti_di_controllo(1) && n>prevWindow&& sum(reinitPrev(round(n-(0.4*Params.framerate-2)):n-1))==0
         sig1 = smoothdata(angleList(1:n),'movmean',round(0.2*Params.framerate)); % Filter the signal from 1 to n
         sig2 = Data.filtered_hough(1:n); % Hough signal already filtered
         sig1Norm=(sig1-min(sig1))./(max(sig1)-min(sig1)); %min-max scaling normalisation
         sig2Norm=(sig2-min(sig2))./(max(sig2)-min(sig2));
-        %figure,plot(sig1Norm,'r');hold on; plot(sig2Norm,'b')
         %%% analysis of angle differences between the two filtered signals
         diffNorm =sig2Norm-sig1Norm; % Normalised difference up to n
         Params.differenza=diffNorm;
@@ -346,34 +302,13 @@ tolerance=0.15*(mean(diff(Params.punti_di_controllo)));
              if e==1
              ParamsEM.contatore3=ParamsEM.contatore3+1;
              end
-            % if derivCounter>tolerance
-            % derivCounter=0;
-            % ParamsEM.contatore1=ParamsEM.contatore1+1;
-            % end
 
             if (ParamsEM.ctrlEnDeriv && nAgree<=round(ParamsEM.ctrlDerivAgreeFrac*prevWindow))
                 ParamsEM.contatore1=ParamsEM.contatore1+1;
             end
 
          end
-        %  if agree==1 && prevAgree==0
-        %      derivCounter=0;
-        % % % compute the difference between the two signals to prevent
-        % % % growth/decay that is too fast
-        %  end
-        %prevAgree=agree;
 
-    %% aponeurosis angle computation
-    % valori=DataEM.frame(n).fascicle.plotInsertions;
-    % apo1x=valori(1).x;
-    % apo1y=valori(1).y;
-    % m_apo1=(diff(apo1y)./diff(apo1x));
-    % ang_apo1=atan2d(m_apo1,1);
-    %
-    % apo2x=valori(2).x;
-    % apo2y=valori(2).y;
-    % m_apo2=(diff(apo2y)./diff(apo2x));
-    % ang_apo2=atan2d(m_apo2,1);
 wrong2=0;  val_change=0;
 if n>=3
      wrong2= ParamsEM.ctrlEnLenJump && abs(DataEM.frame(n).fascicle.length(1) - DataEM.frame(n-1).fascicle.length(1)) > ParamsEM.ctrlLenJumpThresh; % frame-to-frame length jump (check 4)
@@ -406,25 +341,18 @@ ParamsEM.box=ParamsEM.box+1;
                 end
              else
                 wrong=0;
-                dialogBox=round(2*tolerance);% to avoid asking again on the next cycle
+                dialogBox=round(2*tolerance); % to avoid asking again on the next cycle
              end
 elseif wrong==1
     wrong=0;
 end
 end
 
-% if n>tolerance+1
-% if (dialogBox>0||n >0.4*Params.framerate+1 && sum(reinitPrev(n-round(tolerance):n-1))~=0)
-%     wrong=0;
-% end
-% end
 end
 end   % ===== end supervised drift-correction controls =====
 dialogBox=dialogBox-1;
 videoFrameEM= repmat(videoFrame_bwEM,[1,1,3]);
 videoFrameEM = plottrial(DataEM,videoFrameEM,ParamsEM,n);
-
-% call plotting subroutines
 
 % Reset the points
 oldPointsEM = nVisiblePointsEM;

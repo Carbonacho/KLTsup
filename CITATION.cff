@@ -1,0 +1,57 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite the article in 'preferred-citation'."
+title: "KLTsup: supervised muscle fascicle tracking"
+abstract: >-
+  Open-source MATLAB implementation of the KLTsup method: automatic optical-flow
+  (KLT) fascicle tracking in B-mode ultrasound with FFT/Hough image enhancement
+  and a supervision module, plus manual tracking, validation and method
+  comparison.
+type: software
+license: MIT
+repository-code: "https://github.com/Carbonacho/fascicle-tracker"
+authors:
+  - family-names: Carbonaro
+    given-names: Marco
+  - family-names: Cesti
+    given-names: Elena
+  - family-names: Boccardo
+    given-names: Marta
+  - family-names: Truscello
+    given-names: Francesca
+preferred-citation:
+  type: article
+  title: "Ultrasound-based methods to track skeletal muscle architecture in dynamic tasks: a comparative study"
+  year: 2025   # TODO: update on publication
+  # doi: 10.xxxx/xxxxx   # TODO: add on acceptance
+  authors:
+    - family-names: Cesti
+      given-names: Elena
+    - family-names: Carbonaro
+      given-names: Marco
+    - family-names: Boccardo
+      given-names: Marta
+    - family-names: Truscello
+      given-names: Francesca
+    - family-names: Seoni
+      given-names: Silvia
+    - family-names: Cerone
+      given-names: Giacinto L.
+    - family-names: Meiburger
+      given-names: Kristen M.
+    - family-names: Raiteri
+      given-names: Brent J.
+    - family-names: Botter
+      given-names: Alberto
+references:
+  - type: conference-paper
+    title: "Ultrasound-based assessment of gastrocnemius architecture during locomotion: analysis of fascicle tracking accuracy along the gait cycle"
+    year: 2025
+    month: 7
+    conference:
+      name: "Annual International Conference of the IEEE Engineering in Medicine and Biology Society (EMBC)"
+      city: Copenhagen
+      country: DK
+    notes: "Introduces the KLTsup approach. Full author list to be completed."
+    authors:
+      - family-names: Cesti
+        given-names: Elena

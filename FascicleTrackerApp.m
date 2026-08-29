@@ -8,7 +8,6 @@ classdef FascicleTrackerApp < handle
 %
 %   USAGE
 %       app = FascicleTrackerApp;
-%
 %   Keep this file on the MATLAB path together with the rest of the CODICE
 %   pipeline (it self-adds the subfolders on startup).
 %
@@ -59,7 +58,7 @@ classdef FascicleTrackerApp < handle
 
         %% ------------------------------------------------------------ UI
         function buildUI(app)
-            app.Fig = uifigure('Name','Fascicle Tracker (FFT/HFR)', ...
+            app.Fig = uifigure('Name','KLTsup - supervised fascicle tracking', ...
                 'Position',[100 100 1180 720], ...
                 'CloseRequestFcn',@(s,e)onClose(app));
             outer = uigridlayout(app.Fig,[1 2]);
@@ -134,7 +133,7 @@ classdef FascicleTrackerApp < handle
             app.h.chkApo = uicheckbox(g,'Text','','Value',true);
             app.h.chkApo.Layout.Row = r; app.h.chkApo.Layout.Column = 2;
             r = r+1; addLabel(g,r,'Flip horizontally:');
-            app.h.chkFlip = uicheckbox(g,'Text','(cambiaredir)','Value',false, ...
+            app.h.chkFlip = uicheckbox(g,'Text','check if NOT bottom rigth - top left','Value',false, ...
                 'ValueChangedFcn',@(s,e)refreshPreview(app));
             app.h.chkFlip.Layout.Row = r; app.h.chkFlip.Layout.Column = 2;
             r = r+1; addLabel(g,r,'Number of fascicles:');
@@ -192,12 +191,12 @@ classdef FascicleTrackerApp < handle
             r = r+1; addLabel(g,r,'  Length-jump thresh (mm):');
             app.h.numLenJump = addNum(g,r,7.5);
 
-            r = r+1; addLabel(g,r,'  Pennation range:');
+            r = r+1; addLabel(g,r,'  Fascicle angle range:');
             app.h.chkEnPenn = uicheckbox(g,'Text','','Value',true);
             app.h.chkEnPenn.Layout.Row = r; app.h.chkEnPenn.Layout.Column = 2;
-            r = r+1; addLabel(g,r,'  Pennation min (deg):');
+            r = r+1; addLabel(g,r,'  Angle min (deg):');
             app.h.numPennMin = addNum(g,r,14);
-            r = r+1; addLabel(g,r,'  Pennation max (deg):');
+            r = r+1; addLabel(g,r,'  Angle max (deg):');
             app.h.numPennMax = addNum(g,r,35);
 
             % ---- run buttons ----
@@ -227,6 +226,9 @@ classdef FascicleTrackerApp < handle
             app.h.btnLoadSet = uibutton(g,'Text','Load settings...', ...
                 'ButtonPushedFcn',@(s,e)onLoadSettings(app));
             app.h.btnLoadSet.Layout.Row = r; app.h.btnLoadSet.Layout.Column = 2;
+            r = r+1; app.h.btnAbout = uibutton(g,'Text','About / How to cite', ...
+                'ButtonPushedFcn',@(s,e)onAbout(app));
+            app.h.btnAbout.Layout.Row = r; app.h.btnAbout.Layout.Column = [1 2];
 
             % ---- right: status + tabbed preview/results ------------------
             rp = uigridlayout(outer,[2 1]);
@@ -282,7 +284,7 @@ classdef FascicleTrackerApp < handle
             rg.RowHeight = {30,'1x','1x','1x'};
             tog = uigridlayout(rg,[1 5]); tog.Layout.Row = 1;
             tog.Padding = [0 0 0 0]; tog.ColumnSpacing = 6;
-            app.h.chkShowEM  = uicheckbox(tog,'Text','EM (auto)','Value',true, ...
+            app.h.chkShowEM  = uicheckbox(tog,'Text','Automatic','Value',true, ...
                 'ValueChangedFcn',@(s,e)onFrameRateChanged(app));
             app.h.chkShowVal = uicheckbox(tog,'Text','Informed manual','Value',true, ...
                 'ValueChangedFcn',@(s,e)onFrameRateChanged(app));
@@ -293,7 +295,7 @@ classdef FascicleTrackerApp < handle
             app.h.btnPopOut  = uibutton(tog,'Text','Pop out', ...
                 'ButtonPushedFcn',@(s,e)onPopOut(app));
             app.h.axPenn = uiaxes(rg); app.h.axPenn.Layout.Row = 2;
-            title(app.h.axPenn,'Pennation angle'); xlabel(app.h.axPenn,'Time (s)');
+            title(app.h.axPenn,'Fascicle angle'); xlabel(app.h.axPenn,'Time (s)');
             ylabel(app.h.axPenn,'Angle (deg)');
             app.h.axLen = uiaxes(rg); app.h.axLen.Layout.Row = 3;
             title(app.h.axLen,'Fascicle length'); xlabel(app.h.axLen,'Time (s)');
@@ -759,6 +761,19 @@ classdef FascicleTrackerApp < handle
             end
         end
 
+        function onAbout(app)
+            msg = sprintf([ ...
+                'KLTsup - supervised KLT-based fascicle tracking\n\n' ...
+                'Open-source MATLAB implementation of the KLTsup method:\n' ...
+                'automatic FFT/Hough + KLT tracking with a supervision module,\n' ...
+                'plus manual tracking, validation and comparison.\n\n' ...
+                'How to cite:\n' ...
+                'Cesti E. et al. Ultrasound-based methods to track skeletal muscle\n' ...
+                'architecture in dynamic tasks: a comparative study. (year). DOI: [tbd]\n\n' ...
+                'https://github.com/Carbonacho/fascicle-tracker']);
+            uialert(app.Fig,msg,'About KLTsup','Icon','info');
+        end
+
         function [ini,iniEM,refParams] = loadReferenceInit(app)
             ini = struct(); iniEM = struct(); refParams = struct();
             [f,p] = uigetfile({'*.mat','Tracked results'},'Select a reference TrackedData.mat');
@@ -860,7 +875,7 @@ classdef FascicleTrackerApp < handle
             % (magenta fascicle). Honours the Results show-toggles.
             F = app.CurFascicle; drewAny = false;
             if app.h.chkShowEM.Value && isfield(F,'automatic_EM')
-                plotInsertionsAt(app,F.automatic_EM,idx,{[0 0.4 1],[1 0.9 0],[1 0 0]},'EM',false);
+                plotInsertionsAt(app,F.automatic_EM,idx,{[0 0.4 1],[1 0.9 0],[1 0 0]},'FAS',false);
                 drewAny = true;
             end
             if app.h.chkShowVal.Value && isfield(F,'validate')
@@ -1118,8 +1133,8 @@ classdef FascicleTrackerApp < handle
                 [t,nn] = frameTime(S,numel(S.pennation),fr);
                 p = S.pennation(:); l = S.length(:);
                 emT = t; emP = p(1:nn); emL = l(1:nn);
-                plot(axP,emT,emP,'r','DisplayName','EM (auto)');
-                plot(axL,emT,emL,'b','DisplayName','EM (auto)');
+                plot(axP,emT,emP,'r','DisplayName','Automatic');
+                plot(axL,emT,emL,'b','DisplayName','Automatic');
                 hold(axP,'on'); hold(axL,'on');
             end
             [vTp,vP,vTl,vL] = plotManualSeries(app,F,'validate',showVal,axP,axL,'g-o','Informed manual',fr);
@@ -1129,7 +1144,7 @@ classdef FascicleTrackerApp < handle
             if (showEM+showVal+showMan) >= 2
                 legend(axP,'show','Location','best'); legend(axL,'show','Location','best');
             end
-            title(axP,'Pennation angle'); xlabel(axP,'Time (s)'); ylabel(axP,'Angle (deg)');
+            title(axP,'Fascicle angle'); xlabel(axP,'Time (s)'); ylabel(axP,'Angle (deg)');
             title(axL,'Fascicle length'); xlabel(axL,'Time (s)'); ylabel(axL,'Length (mm)');
 
             % --- agreement readout (EM vs each manual) ---
@@ -1188,7 +1203,7 @@ classdef FascicleTrackerApp < handle
                 F = app.CurFascicle;
                 fr = app.h.numFrameRate.Value; if fr<=0, fr=1; end
                 assert(isfield(F,'automatic_EM') && isfield(F.automatic_EM,'pennation'), ...
-                    'Bland-Altman needs an EM (auto) result.');
+                    'Bland-Altman needs an automatic tracking result.');
                 em = F.automatic_EM;
                 ne = min([numel(em.trackFrames) numel(em.pennation) numel(em.length)]);
                 emT = (em.trackFrames(1:ne).'-1)/fr; emP = em.pennation(1:ne); emL = em.length(1:ne);
@@ -1339,7 +1354,7 @@ function baPlot(ax,tEM,yEM,tMan,yMan,ttl,unit)
     yline(ax,hi,'--','Color',[0.75 0 0]);
     yline(ax,lo,'--','Color',[0.75 0 0]);
     hold(ax,'off'); grid(ax,'on');
-    xlabel(ax,['mean (' unit ')']); ylabel(ax,['EM - manual (' unit ')']);
+    xlabel(ax,['mean (' unit ')']); ylabel(ax,['auto - manual (' unit ')']);
     title(ax,sprintf('%s   bias=%.2f, LoA[%.2f, %.2f], n=%d',ttl,bias,lo,hi,numel(a)));
 end
 function s = seriesReadout(F,fld,label,idx)
@@ -1354,7 +1369,7 @@ function s = seriesReadout(F,fld,label,idx)
     L = NaN; P = NaN;
     if numel(S.length)   >= j, L = S.length(j);   end
     if numel(S.pennation)>= j, P = S.pennation(j); end
-    s = [label ': L=' num2str(L,'%.1f') 'mm  ' char(966) '=' num2str(P,'%.1f') char(176)];
+    s = [' L=' num2str(L,'%.1f') 'mm  ' char(966) '=' num2str(P,'%.1f') char(176)];
 end
 function c = cursorOn(ax,c,val)
     % create the vertical frame-cursor if missing/deleted, else move it
