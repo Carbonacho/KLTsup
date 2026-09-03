@@ -20,3 +20,6 @@ VIDEO_Flipped*.mp4
 Thumbs.db
 desktop.ini
 *.tmp
+
+# Legacy script (kept locally, not published)
+scripts/
