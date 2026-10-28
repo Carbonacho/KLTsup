@@ -4,7 +4,7 @@ function setup_paths()
 %   Run this once per MATLAB session before using the pipeline:
 %       >> setup_paths
 %
-%   The two entry points (main_FFT_HFR and FascicleTrackerApp) also call
+%   FascicleTrackerApp also call
 %   this automatically, so you normally do not need to run it by hand -
 %   it is provided for convenience (e.g. before running demo_enhancement).
 

@@ -1,5 +1,5 @@
 function out = enhanceUSImage(frame, apoDeep, apoSup, opts)
-%ENHANCEUSIMAGE  Standalone image enhancement for ultrasound fascicle images.
+%   ENHANCEUSIMAGE  Standalone image enhancement for ultrasound fascicle images.
 %
 %   This function reproduces, in a single self-contained routine, the two
 %   image-enhancement stages that the tracking pipeline normally runs in
@@ -35,8 +35,6 @@ function out = enhanceUSImage(frame, apoDeep, apoSup, opts)
 %                              pipeline does this via Params.cambiaredir so
 %                              fascicles run bottom-left -> top-right).
 %       .cropRect      ([])    [x y w h] crop applied before everything.
-%       .apoVisible    (true)  if false, the superficial-apo "no aponeurosis"
-%                              trick is applied (top 30 rows -> mean value).
 %       .sharpenAmount (0.8)   imsharpen amount.
 %       .sharpenRadius (15)    imsharpen radius.
 %       .brightness    (1.5)   post-contrast multiplicative gain.
@@ -86,12 +84,6 @@ img = im2single(frame);
 out.raw = img;
 
 %% ---------- Stage 1: spatial pre-processing (preprocessing.m) ----------
-if ~opts.apoVisible
-    % "no superficial aponeurosis" trick: overwrite the top 30 rows with the
-    % image mean so the belly ROI logic is not thrown off by the skin line.
-    w = size(img,2);
-    img(1:30,:) = repmat(mean(img(:)),30,w);
-end
 img = medfilt2(img,[3 3]);
 p   = prctile(img(:),20);
 imgC = imadjust(img,[p 0.95],[0 1]);

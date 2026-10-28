@@ -23,8 +23,6 @@ See [README.md](README.md) for requirements and folder layout.
 5. When it finishes, the **Results** tab shows pennation, length and the Hough
    signal. Results auto-save to a `tracked/…/TrackedData.mat` next to the video.
 
-That's a full automatic track. Everything below is detail and extras.
-
 ---
 
 ## 2. Window layout

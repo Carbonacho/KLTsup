@@ -33,7 +33,7 @@ end
 Params.padAVIframes = 5;
 Params.manual = 'excursion'; % just calculate first and last frame fascicle length and pennation.
 
-% supervised drift-correction controls (Hough-signal based, EM path only)
+% supervised drift-correction controls (Hough-signal based)
 % Set useControls=false for plain KLT tracking (no Hough-based re-initialization).
 Params.useControls = true;
 Params.houghCutoff = 1;   % Hz, low-pass cutoff applied to the Hough signal (used by the controls)
@@ -68,13 +68,10 @@ end
 % Manual tracking (Validation parameters)
 Params.validateFrameType = 'position'; % biodex channels - 'position' or 'cyclepercent' of clip for gait and other movements
 Params.validateFrameVal = [-20:10:30];
-% Params.validateFramePercent = [0:0.2:1]; previous
-%Params.validateFramePercent = [0,0.1,0.15,0.2,0.25,0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95,1];
-Params.manualFrameStep = 4; %
+Params.manualFrameStep = 4; 
 
 % paths for saving
 Params.userInitials = 'user';
-
 Params.date_time_track = datestr(now,'yyyymmdd_HHMMSS');
 Params.trackedSaveDir = fullfile(Params.viddir,'tracked',[Params.nome_Video,'_',Params.date_time_track]);
 

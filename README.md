@@ -84,7 +84,7 @@ Per trial, three tracking series (when available), all directly comparable:
 
 | Series | Source | Colour |
 |--------|--------|--------|
-| **EM (auto)** | automatic FFT/Hough + KLT tracking | red / blue |
+| **Automatic** | automatic FFT/Hough + KLT tracking | red / blue |
 | **Informed manual** | manual validation *after* an auto run (aponeuroses from auto, you draw the fascicle) | green ○ |
 | **Pure manual** | fully independent manual tracking (you draw everything) | magenta □ |
 

@@ -1,10 +1,5 @@
 classdef FascicleTrackerApp < handle
-%FASCICLETRACKERAPP  GUI front-end for the FFT/HFR fascicle-tracking pipeline.
-%
-%   A programmatic uifigure app that replaces the manual setup portion of
-%   main_FFT_HFR.m (file dialogs, listdlg selections, hardcoded geometry and
-%   the missing selezione_incl_fascicoli) with editable controls, then runs
-%   trackfascicle() and displays the results.
+%   FASCICLETRACKERAPP  GUI front-end for the FFT/HFR fascicle-tracking pipeline.
 %
 %   USAGE
 %       app = FascicleTrackerApp;
@@ -96,6 +91,12 @@ classdef FascicleTrackerApp < handle
             r = r+1; addLabel(g,r,'Hough cutoff (Hz):');
             app.h.numHoughCut = addNum(g,r,1);
             app.h.numHoughCut.ValueChangedFcn = @(s,e)onFrameRateChanged(app);
+            r = r+1; addLabel(g,r,'Hough angle min (deg):');
+            app.h.numHoughPennMin = addNum(g,r,15);   % GM default (15-60 deg)
+            app.h.numHoughPennMin.Tooltip = 'Min pennation searched by the Hough transform. GM: 15, TA: ~2';
+            r = r+1; addLabel(g,r,'Hough angle max (deg):');
+            app.h.numHoughPennMax = addNum(g,r,60);
+            app.h.numHoughPennMax.Tooltip = 'Max pennation searched by the Hough transform. GM: 60, TA: ~20';
             r = r+1; addLabel(g,r,'First frame:');
             app.h.numStart = addNum(g,r,1);
             app.h.numStart.ValueChangedFcn = @(s,e)previewFrameField(app,app.h.numStart);
@@ -317,7 +318,7 @@ classdef FascicleTrackerApp < handle
                 fps = v.FrameRate;
                 w = v.Width; ht = v.Height;
             catch ME
-                setStatus(app,['ERROR reading video: ' ME.message],true); return;
+                reportError(app,ME,'ERROR reading video'); return;
             end
             stopPlay(app);
             app.VideoFile = vf;
@@ -330,8 +331,11 @@ classdef FascicleTrackerApp < handle
             app.TrialName = matlab.lang.makeValidName(base);
 
             app.h.lblVideo.Text = f;
-            app.h.lblInfo.Text = sprintf('%d frames @ %.1f fps  (%.1f s, %dx%d)', ...
-                nFrames, fps, v.Duration, w, ht);
+            app.h.lblVideo.Tooltip = vf;   % full path on hover
+            % resolution first so it stays visible in the narrow panel
+            app.h.lblInfo.Text = sprintf('%dx%d px, %d frames @ %.1f fps (%.1f s)', ...
+                w, ht, nFrames, fps, v.Duration);
+            app.h.lblInfo.Tooltip = app.h.lblInfo.Text;   % full text on hover
             app.h.edTrial.Value = app.TrialName;
             if fps > 0, app.h.numFrameRate.Value = round(fps); end
             app.h.numStart.Value = 1;
@@ -369,7 +373,7 @@ classdef FascicleTrackerApp < handle
                 trial = app.TrialName;
 
                 % pipeline reads the video path from this global (temp video only)
-                global subdir %#ok<GVMIS>
+                global subdir 
                 subdir = app.VideoFolder;
 
                 % --- synthesize what the clip .mat used to provide ---
@@ -384,7 +388,7 @@ classdef FascicleTrackerApp < handle
                     Params = buildParams(app,fr,step);
                     setStatus(app,'Tracking (with initialization)... follow the pipeline dialogs.',false);
                     drawnow;
-                    [Fascicle,~,~,Params,ini,iniEM] = trackfascicle(TD,Params,1,trial); %#ok<ASGLU>
+                    [Fascicle,~,~,Params,ini,iniEM] = trackfascicle(TD,Params,1,trial); 
                     app.Init = ini; app.InitEM = iniEM; app.InitParams = Params; app.HasInit = true;
                 else
                     if ~app.HasInit
@@ -401,6 +405,7 @@ classdef FascicleTrackerApp < handle
                     Params.downsampling_framerate = step;
                     Params.manualFrameStep = max(1,round(app.h.numValStep.Value));
                     Params.houghCutoff          = max(0.01,app.h.numHoughCut.Value);
+                    Params.houghPennRange       = houghPennRange(app);
                     Params.useControls          = app.h.chkControls.Value;
                     Params.ctrlEnReinit         = app.h.chkEnReinit.Value;
                     Params.ctrlEnDeriv          = app.h.chkEnDeriv.Value;
@@ -444,7 +449,7 @@ classdef FascicleTrackerApp < handle
                 setStatus(app,sprintf('Done: %s tracked (%d frames).',trial, ...
                     numel(Fascicle.automatic_EM.pennation)),false);
             catch ME
-                setStatus(app,['ERROR: ' ME.message],true);
+                reportError(app,ME,'ERROR');
             end
         end
 
@@ -577,11 +582,11 @@ classdef FascicleTrackerApp < handle
                 setStatus(app,sprintf('Manual tracking done: %d frames. Saved to %s', ...
                     numel(frameInd),Params.trackedSaveDir),false);
             catch ME
-                setStatus(app,['ERROR: ' ME.message],true);
+                reportError(app,ME,'ERROR');
             end
         end
 
-        function act = waitForAction(app,hFig) %#ok<INUSL>
+        function act = waitForAction(app,hFig) 
             % Block (ROIs stay interactive) until the user acts:
             %   Space/Enter/Confirm button -> 'confirm'
             %   R -> 'redo' all (idx 0);  1..N -> 'redo' that structure
@@ -698,8 +703,8 @@ classdef FascicleTrackerApp < handle
                             vt = (V.trackFrames(1:nv).'-1)/fr;
                             [rp,cp,np_] = agreementMetrics(emT,emP,vt,V.pennation(1:nv));
                             [rl,cl,nl_] = agreementMetrics(emT,emL,vt,V.length(1:nv));
-                            M(end+1,:) = {['EM_vs_' tgt{1}],'pennation_deg',cp,rp,np_}; %#ok<AGROW>
-                            M(end+1,:) = {['EM_vs_' tgt{1}],'length_mm',cl,rl,nl_};      %#ok<AGROW>
+                            M(end+1,:) = {['EM_vs_' tgt{1}],'pennation_deg',cp,rp,np_}; 
+                            M(end+1,:) = {['EM_vs_' tgt{1}],'length_mm',cl,rl,nl_};      
                         end
                     end
                     if ~isempty(M)
@@ -710,13 +715,13 @@ classdef FascicleTrackerApp < handle
                 end
                 setStatus(app,['Exported ' base '_timeseries.csv' extra],false);
             catch ME
-                setStatus(app,['ERROR: ' ME.message],true);
+                reportError(app,ME,'ERROR');
             end
         end
 
         function names = settingNames(~)
             % GUI input controls whose .Value is saved/restored as a preset
-            names = {'numFrameRate','numHoughCut','numStart','numLast','numStep', ...
+            names = {'numFrameRate','numHoughCut','numHoughPennMin','numHoughPennMax','numStart','numLast','numStep', ...
                 'numValStep','numDepth','numProbe','numCropX','numCropY','numCropW', ...
                 'numCropH','chkApo','chkFlip','numFas','numBlock','numPyr','numBiDir', ...
                 'numMaxApo','numMaxFas','numThrApo','numThrFas','chkSaveVid','chkControls', ...
@@ -738,7 +743,7 @@ classdef FascicleTrackerApp < handle
                 save(fullfile(p,f),'-struct','s');
                 setStatus(app,['Saved settings to ' f],false);
             catch ME
-                setStatus(app,['ERROR: ' ME.message],true);
+                reportError(app,ME,'ERROR');
             end
         end
 
@@ -757,7 +762,7 @@ classdef FascicleTrackerApp < handle
                 if ~isempty(app.CurFascicle), plotResults(app,app.CurFascicle); end
                 setStatus(app,['Loaded settings from ' f],false);
             catch ME
-                setStatus(app,['ERROR: ' ME.message],true);
+                reportError(app,ME,'ERROR');
             end
         end
 
@@ -810,7 +815,7 @@ classdef FascicleTrackerApp < handle
                 outdir = fullfile(app.VideoFolder,'tracked');
             end
             if ~exist(outdir,'dir'), mkdir(outdir); end
-            Results = app.Results; %#ok<PROPLC>
+            Results = app.Results;
             save(fullfile(outdir,'TrackedData.mat'),'Results');
             setStatus(app,['Saved TrackedData.mat to ' outdir],false);
         end
@@ -875,7 +880,7 @@ classdef FascicleTrackerApp < handle
             % (magenta fascicle). Honours the Results show-toggles.
             F = app.CurFascicle; drewAny = false;
             if app.h.chkShowEM.Value && isfield(F,'automatic_EM')
-                plotInsertionsAt(app,F.automatic_EM,idx,{[0 0.4 1],[1 0.9 0],[1 0 0]},'FAS',false);
+                plotInsertionsAt(app,F.automatic_EM,idx,{[0 0.4 1],[1 0.9 0],[1 0 0]},'Automatic',false);
                 drewAny = true;
             end
             if app.h.chkShowVal.Value && isfield(F,'validate')
@@ -1088,6 +1093,7 @@ classdef FascicleTrackerApp < handle
             Params.manualFrameStep = max(1,round(app.h.numValStep.Value)); % validation frame step
 
             Params.houghCutoff          = max(0.01,app.h.numHoughCut.Value);
+            Params.houghPennRange       = houghPennRange(app);
 
             % supervised drift-correction controls (master + per-control enables)
             Params.useControls          = app.h.chkControls.Value;
@@ -1182,7 +1188,7 @@ classdef FascicleTrackerApp < handle
             xlabel(axH,'Frame'); ylabel(axH,'Angle (deg)');
         end
 
-        function [tp,yp,tl,yl] = plotManualSeries(app,F,fld,show,axP,axL,style,name,fr) %#ok<INUSL>
+        function [tp,yp,tl,yl] = plotManualSeries(app,F,fld,show,axP,axL,style,name,fr) 
             tp=[]; yp=[]; tl=[]; yl=[];
             if ~show, return; end
             S = F.(fld);
@@ -1226,7 +1232,7 @@ classdef FascicleTrackerApp < handle
                 end
                 setStatus(app,'Bland-Altman plotted.',false);
             catch ME
-                setStatus(app,['ERROR: ' ME.message],true);
+                reportError(app,ME,'ERROR');
             end
         end
 
@@ -1248,7 +1254,7 @@ classdef FascicleTrackerApp < handle
         function autoSave(app,Params)
             try
                 if ~exist(Params.trackedSaveDir,'dir'), mkdir(Params.trackedSaveDir); end
-                Results = app.Results; %#ok<PROPLC>
+                Results = app.Results;
                 save(fullfile(Params.trackedSaveDir,'TrackedData.mat'),'Results');
             catch
                 % non-fatal; user can still Save... manually
@@ -1261,6 +1267,25 @@ classdef FascicleTrackerApp < handle
             else,     app.h.status.FontColor = [0 0 0];
             end
             drawnow;
+        end
+
+        function pr = houghPennRange(app)
+            % [min max] pennation (deg) searched by hough_fas, kept inside (0,90)
+            pr = sort([app.h.numHoughPennMin.Value app.h.numHoughPennMax.Value]);
+            pr = min(max(pr,0.5),89.5);
+            assert(pr(2)-pr(1) >= 1,'Hough angle range must span at least 1 deg.');
+        end
+
+        function reportError(app,ME,prefix)
+            % Show where an error happened: short version (file + line) in the
+            % status bar, full stack trace in the Command Window.
+            where = '';
+            if ~isempty(ME.stack)
+                [~,fn,ext] = fileparts(ME.stack(1).file);
+                where = sprintf('  [%s%s, line %d]',fn,ext,ME.stack(1).line);
+            end
+            setStatus(app,[prefix ': ' ME.message where],true);
+            fprintf(2,'\n===== %s =====\n%s\n\n',prefix,getReport(ME,'extended','hyperlinks','on'));
         end
     end
 end

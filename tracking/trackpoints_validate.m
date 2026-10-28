@@ -1,5 +1,5 @@
 function DataValidate = trackpoints_validate(Data,Params)
-%% Manual validation of the fascicle after automatic tracking.
+%  Manual validation of the fascicle after automatic tracking.
 %  The aponeuroses are taken from the automatic track; the user only draws /
 %  adjusts the fascicle. From the second sampled frame the previous fascicle
 %  is pre-placed as a draggable line so it only needs nudging. On every frame:
@@ -10,19 +10,15 @@ function DataValidate = trackpoints_validate(Data,Params)
 DataValidate.manual = Data.manual;
 DataValidate.validate = 1;
 DataValidate.trialName = Data.trialName;
-
 % frames to validate (stepped by the validation frame step)
 frameInd = [Data.trackFrames(1):Params.manualFrameStep:Data.trackFrames(end)];
 nFrames = length(frameInd);
 n = 0;
 frameCount = 1;
-
 % Initialize video reader
 videoFileReader = vision.VideoFileReader(Data.trialName);
-
 DataValidate.trackFrames = frameInd;
 DataValidate.imageTime = Data.mocapTime(frameInd);
-
 % one reusable figure with confirm/redraw controls
 hFig = figure('Name','Validation - adjust fascicle then confirm', ...
     'NumberTitle','off','WindowState','maximized', ...
@@ -31,25 +27,19 @@ hAx = axes('Parent',hFig);
 uicontrol(hFig,'Style','pushbutton','String','Confirm (Space)', ...
     'Units','normalized','Position',[0.87 0.01 0.12 0.05], ...
     'Callback',@(s,e)vBtn(hFig));
-
 prevPos = cell(1,Params.n_struct);   % previous fascicle line positions
 cancelled = false;
-
 while ~isDone(videoFileReader) && isvalid(hFig)
-
     % step the reader to the next frame to validate
     frame2track = frameInd(frameCount);
     while n < frame2track
         videoFrame = step(videoFileReader);
         n = n + 1;
     end
-
     DataValidate.frame(frameCount).points = [];
     DataValidate.frame(frameCount).group = [];
-
     % overlay the (automatic) aponeurosis lines on the frame
     videoFrame = plottrial(Data,videoFrame,Params,n,[1,2]);
-
     % reference fascicle to show as a guide: automatic on frame 1, else the
     % previously validated fascicle
     if frameCount == 1
@@ -62,7 +52,6 @@ while ~isDone(videoFileReader) && isvalid(hFig)
         plotInsertions = DataValidate.frame(frameCount-1).fascicle.plotInsertions;
     end
     videoFrame = insertMarker(videoFrame,deepFascPts,'x','color','red','size',12);
-
     imshow(videoFrame,'Parent',hAx); hold(hAx,'on');
     plot(hAx,[deepFascPts(1) supFascPts(1)],[deepFascPts(2) supFascPts(2)],'w');
     plot(hAx,[plotInsertions(1).x(1) deepFascPts(1)],[plotInsertions(1).y(1) deepFascPts(2)],'r');
@@ -70,7 +59,6 @@ while ~isDone(videoFileReader) && isvalid(hFig)
     plot(hAx,deepFascPts(1),deepFascPts(2),'xb');
     plot(hAx,supFascPts(1),supFascPts(2),'xb');
     hold(hAx,'off');
-
     % aponeuroses: keep the automatic ones (1 = deep, 2 = superficial)
     for i1 = 1:2
         for i2 = 1:2 % 1 = left, 2 = right end
@@ -79,7 +67,6 @@ while ~isDone(videoFileReader) && isvalid(hFig)
                  Data.frame(n).fascicle.plotInsertions(i1).y(i2)];
         end
     end
-
     % fascicle(s): inherit the previous line as a draggable ROI, or draw it
     % on the first frame
     rois = gobjects(1,Params.n_struct);
@@ -96,7 +83,6 @@ while ~isDone(videoFileReader) && isvalid(hFig)
         end
     end
     if cancelled, break; end
-
     % adjust / redraw / confirm loop
     confirmed = false;
     while ~confirmed && isvalid(hFig)
@@ -124,7 +110,6 @@ while ~isDone(videoFileReader) && isvalid(hFig)
         end
     end
     if cancelled, break; end
-
     % store the confirmed fascicle line(s) and carry them to the next frame
     for i1 = 3:Params.n_struct
         p = rois(i1).Position;
@@ -132,10 +117,8 @@ while ~isDone(videoFileReader) && isvalid(hFig)
         prevPos{i1} = p;
     end
     delete(rois(isvalid(rois)));
-
     % calculate fascicle angle and length
     DataValidate.frame(frameCount).fascicle = calculatefascicle(DataValidate.frame(frameCount),Params);
-
     frameCount = frameCount + 1;
     if frameCount > nFrames
         break; % finished validation
@@ -145,7 +128,6 @@ end
 % Clean up
 release(videoFileReader);
 if isvalid(hFig), close(hFig); end
-
 % if the user stopped early, trim the frame list to what was actually done
 nDone = frameCount - 1;
 if nDone < nFrames && nDone >= 1
